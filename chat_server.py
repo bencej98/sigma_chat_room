@@ -22,7 +22,6 @@ class Connection:
         self.counter_reset = threading.Thread(target=self.reset_counter, daemon=True)
         self.counter_reset.start()
 
-
     def is_alive(self):
         return self.socket is not None
 
@@ -83,6 +82,8 @@ class ChatServer:
         self.incoming_connections_thread = threading.Thread(
             target=self.handle_new_connection, daemon=True)
         self.incoming_connections_thread.start()
+        self.t = threading.Thread(target=self.new_terminal, daemon=True)
+        self.t.start()
         self.server_msg = []
 
     def handle_new_connection(self):
@@ -108,7 +109,7 @@ class ChatServer:
                 msg_obj = Message(msg["type"], msg["msg"])
                 new_messages[connection_id] = msg_obj
         return new_messages
-    
+
     def check_existing_name(self, name):
         for id in self.connections:
             if name == self.connections[id].name:
@@ -128,7 +129,7 @@ class ChatServer:
                         bad_name = Message("NEWCON", "Name cannot include 'server' or 'admin'! Cannot ")
                         curr_connection.handle_outgoing_traffic(bad_name.__dict__)
                         curr_connection.socket.close()
-                    else:            
+                    else:
                         if self.check_existing_name(curr_msg.msg):
                             bad_name = Message("NEWMSG", [f"{curr_msg.msg[0]}", "Name already in use!"])
                             curr_connection.handle_outgoing_traffic(bad_name.__dict__)
@@ -172,7 +173,7 @@ class ChatServer:
 
     def ban_user(self, name, msg):
         if name in self.get_connections_name():
-            ban_msg = Message("NEWMSG", [f"{name}", f"{msg}"])
+            ban_msg = Message("NEWMSG", ["serveradmin", f"{msg}"])
             conn_to_ban = self.get_connection_by_name(name)
             conn_to_ban.handle_outgoing_traffic(ban_msg.__dict__)
             time.sleep(0.01)
@@ -185,7 +186,7 @@ class ChatServer:
         for id in self.connections:
             names.append(self.connections[id].name[0])
         return names
-    
+
     def get_connection_by_name(self, name) -> Connection:
         for id in self.connections:
             if self.connections[id].name[0] == name:
@@ -206,17 +207,14 @@ class ChatServer:
         for id in conns_to_del:
             self.connections.pop(id)
 
+    def new_terminal(self):
+        while True:
+            inp = input()
+            self.server_msg.append(inp)
 
-def new_terminal(server: ChatServer):
-    while True:
-        inp = input()
-        server.server_msg.append(inp)
-        time.sleep(0.001)
 
 def main():
     server = ChatServer()
-    t = threading.Thread(target=new_terminal, args=(server,),  daemon=True)
-    t.start()
     server.process_incomig_messages()
 
 
