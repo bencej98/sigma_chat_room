@@ -164,7 +164,7 @@ class ChatServer:
             time.sleep(0.01)
             conn_to_ban.socket.close()
             broadcast_ban = Message("CLOSED", [f"Banned {name}"])
-            self.broadcast_message(broadcast_ban)
+            self.broadcast_message(broadcast_ban.__dict__)
 
     def get_connections_name(self):
         names = []
